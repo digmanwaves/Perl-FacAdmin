@@ -40,7 +40,7 @@ my $toolname = 'facAdmin';
 my $company  = 'Digital Manifold Waves';
 my $author   = 'Walter Daems (walter.daems@ua.ac.be)';
 my $date     = '2013/04/09';
-my $version  = '2.0.0';
+my $version  = '1.00';
 
 print
   "/***************************************************\n"
