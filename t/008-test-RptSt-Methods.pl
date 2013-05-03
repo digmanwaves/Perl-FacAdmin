@@ -34,7 +34,7 @@ print "ok $cntr\n";
 # check method buildDataBase
 $cntr = 3;
 $rptst->buildDataBase();
-print STDERR Data::Dumper->Dump( [ $rptst ], [ "Report Study Guide" ] );
+#print STDERR Data::Dumper->Dump( [ $rptst ], [ "Report Study Guide" ] );
 print "ok $cntr\n";
 
 
