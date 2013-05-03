@@ -17,6 +17,7 @@ use XLDB::IFile;
 use FacAdmin::Personnel;
 use FacAdmin::Programmes;
 use FacAdmin::EduInventory;
+use FacAdmin::RptSt;
 
 use XLDB::OFile;
 use XLDB::Sheet;
@@ -51,25 +52,27 @@ print
 my ($program, $installdir) = fileparse( $0 );
 
 my $tasks;
-my $check;
+my $icheck;
 my $curriculum;
 my $roster;
 my $help;
 my $man;
 my $limit;
 
-GetOptions( "limit=s"      => \$limit,
-	    "tasks"        => \$tasks,
-	    "check"        => \$check,
-	    "curriculum"   => \$curriculum,
-	    "roster"       => \$roster,
-	    "help|?"       => \$help,
-	    "man"          => \$man )
+GetOptions( "limit=s"         => \$limit,
+	    "tasks"           => \$tasks,
+	    "internal-check"  => \$icheck,
+	    "sisa-check"      => \$ocheck,
+	    "curriculum"      => \$curriculum,
+	    "roster"          => \$roster,
+	    "help|?"          => \$help,
+	    "man"             => \$man )
   or pod2usage(2);
 
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2 ) if $man;
-pod2usage(1) unless ( defined( $check ) or
+pod2usage(1) unless ( defined( $icheck ) or
+		      defined( $ocheck ) or
 		      defined( $tasks ) or
 		      defined( $curriculum ) or
 		      defined( $roster ) );
@@ -144,8 +147,29 @@ my $einv = FacAdmin::EduInventory->new();
 # sanity checks on owo
 #####################
 
-if ( $check ) {
+if ( $icheck ) {
   ConLogger::logitem( 'Performing relational sanity checks' );
+
+  while ( my ( $sgnr, $CRO ) = each( %{$einv->db()} ) ) {
+    # check duplicate use of Studiegidsnrs
+    foreach my $cro ( qw( C R O ) ) {
+      my @oos = keys %{$CRO->{$cro}};
+      if ( @oos > 1 ) {
+	die( "Error: Duplicate use of " . labelof( $einv->header()->{SGNR} ) .
+	     " '$sgnr'\n" .
+	     "       You used it for: " . join( ", ", @oos ) . "\n" );
+      }
+    }
+  }
+  exit(0);
+}
+
+#######################################
+# crosschecking with QQ_RPTST van SisA
+#####################################
+
+if ( $ocheck ) {
+  ConLogger::logitem( 'Performing cross-check with SisA' );
 
   while ( my ( $sgnr, $CRO ) = each( %{$einv->db()} ) ) {
     # check duplicate use of Studiegidsnrs
@@ -1154,7 +1178,7 @@ EOF
 	  chop $curriculumstring;
 	  $curriculumstring .= ")";
 	  $sh->write( $row, ++$col, $curriculumstring, 'Lb' );
-	
+
 	  my $actdb = $sgnrdb->{$sgnr}->{R};
 	  ++$row;
 	  foreach my $act ( sort keys %{$actdb} ) {
