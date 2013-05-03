@@ -45,11 +45,13 @@ sub buildDataBase {
 
       ######################################
       # parse the line into the %$line hash
+
       my $line = $self->parseLine( $i );
 
       ###################
       # do sanity checks
       # check presence of mandatory fields
+
       $self->checkMandatoryFields( [ qw( NAME OPL VTE OZP DVP ) ],
 				   $line, "" );
 
@@ -89,11 +91,11 @@ __END__
 
 =head1 COPYRIGHT
 
- CONFIDENTIAL AND PROPRIETARY (C) 2013 Digital Manifold Waves
+ CONFIDENTIAL AND PROPRIETARY (C) 2013 Walter Daems / Digital Manifold Waves
 
 =head1 AUTHOR
 
- Digital Manifold Waves -- F<walter.daems@ua.ac.be>
+ Digital Manifold Waves -- F<walter@digmanwaves.net>
 
 =cut
 
