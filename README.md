@@ -1,4 +1,4 @@
 Perl-FacAdmin
 =============
 
-Faculty administration package
+Faculty Administration Suite based on XLDB
