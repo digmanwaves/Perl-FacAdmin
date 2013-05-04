@@ -1,7 +1,8 @@
 require 5.006;
 
 use ExtUtils::MakeMaker;
-eval{ require ExtUtils::MakeMaker::JSONMETA;};
+
+$version = '1.00';
 
 my $target = 'MS'; # set this to MS to avoid generating man pages with 
 
@@ -12,7 +13,7 @@ WriteMakefile
    NAME      => 'FacAdmin',
    AUTHOR    => 'Walter Daems / Digital Manifold Waves (walter@digmanwaves.net)',
    ABSTRACT  => 'Faculty Administration Suite based on XLDB',
-   VERSION   => '1.00',
+   VERSION   => $version,
    PREREQ_PM => { 'XLDB::File' => 0,
                   'XLDB::IFile' => 0,
                   'XLDB::OFile' => 0,
