@@ -1,0 +1,19 @@
+<SOFTPKG NAME="FacAdmin" VERSION="1.00">
+  <ABSTRACT>Faculty Administration Suite based on XLDB</ABSTRACT>
+  <AUTHOR>Walter Daems / Digital Manifold Waves (walter@digmanwaves.net)</AUTHOR>
+  <PROVIDE NAME="FacAdmin::EduInventory" VERSION="1.00" />
+  <PROVIDE NAME="FacAdmin::Personnel" VERSION="1.00" />
+  <PROVIDE NAME="FacAdmin::Programmes" VERSION="1.00" />
+  <PROVIDE NAME="FacAdmin::RptSt" VERSION="1.00" />
+  <IMPLEMENTATION>
+    <REQUIRE NAME="ConLogger::" />
+    <REQUIRE NAME="ConLogger::ProgressBar" />
+    <REQUIRE NAME="ConLogger::SubTask" />
+    <REQUIRE NAME="XLDB::DataBase" />
+    <REQUIRE NAME="XLDB::File" />
+    <REQUIRE NAME="XLDB::IFile" />
+    <REQUIRE NAME="XLDB::OFile" />
+    <REQUIRE NAME="XLDB::Sheet" />
+    <CODEBASE HREF="FacAdmin-1.00.tar.gz" />
+  </IMPLEMENTATION>
+</SOFTPKG>
