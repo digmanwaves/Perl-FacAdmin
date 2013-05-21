@@ -53,6 +53,7 @@ my ($program, $installdir) = fileparse( $0 );
 
 my $tasks;
 my $icheck;
+my $ocheck;
 my $curriculum;
 my $roster;
 my $help;
@@ -461,18 +462,18 @@ if ( $tasks ) {
       $col = $detcol;
       my $coeffrow = $row;
       $wsh->write( $row,   $col, 3.0 / 100, 'RI1P1' ); # HC
-      $wsh->write( $row, ++$col, 2.5 / 100, 'RI1P1' ); # WC
-      $wsh->write( $row, ++$col, 2.5 / 100, 'RI1P1' ); # PR
+      $wsh->write( $row, ++$col, 3.0 / 100, 'RI1P1' ); # WC
+      $wsh->write( $row, ++$col, 3.0 / 100, 'RI1P1' ); # PR
       $wsh->write( $row, ++$col, 2.0 / 100, 'RI1P1' ); # HC parallel
-      $wsh->write( $row, ++$col, 1.5 / 100, 'RI1P1' ); # WC parallel
-      $wsh->write( $row, ++$col, 1.5 / 100, 'RI1P1' ); # PR parallel
+      $wsh->write( $row, ++$col, 2.0 / 100, 'RI1P1' ); # WC parallel
+      $wsh->write( $row, ++$col, 2.0 / 100, 'RI1P1' ); # PR parallel
       $wsh->write( $row, ++$col, 1.0 / 100, 'RI1P1' ); # Coaching
       $wsh->write( $row, ++$col, 1.0 / 100, 'RI1P1' ); # Wetenschappelijke project
       $wsh->write( $row, ++$col, 1.3 / 100, 'RI1P1' ); # Bachelorproef
       $wsh->write( $row, ++$col, 1.0 / 100, 'RI1P1' ); # toeslag nieuw
       $wsh->write( $row, ++$col, 1.0 / 100, 'RI1P1' ); # toeslag grote groep
       $wsh->write( $row, ++$col, 0.6 / 100, 'RI1P1' ); # Stage
-      $wsh->write( $row, ++$col, 1.5 / 100, 'RI1P1' ); # Masterproef
+      $wsh->write( $row, ++$col, 2.0 / 100, 'RI1P1' ); # Masterproef
       $wsh->write( $row, ++$col, 5.0 / 100, 'RI1P1' ); # Andere taken
       $wsh->merge_range( $row-1, $detcol, $row-1, $col,
 			 "Opdrachtscoëfficiënten [%/eenheid]", 'Ca' );
@@ -517,7 +518,7 @@ if ( $tasks ) {
 	      if ( exists( $detail->{$tag} ) ) {
 		$wsh->write( $row, $col, $detail->{$tag}, 'RI1F1' );
 		my $primaryhoursonly = $detail->{$tag} / 12;
-		$newacthours += $primaryhoursonly;
+		$newacthours += $primaryhoursonly * $detail->{AGR};
 		$wsh->write( $row, $col + $detcol - $sumcol + 3, $primaryhoursonly, 'RI1F1' );
 	      }
 	    }
@@ -680,8 +681,8 @@ if ( $tasks ) {
       ####################
 
       $idxcol = 0;
-      my $mydoc = $doc;
-      $mydoc =~ s/'//g;	# for Bob T'Jollyn
+      #my $mydoc = $doc;
+      #$mydoc =~ s/'//g;	# for Bob T'Jollyn
       $idxsh->write_url( ++$idxrow, $idxcol,
 			 "internal:'$mydoc'!A1", 'link', $doc );
       $idxsh->write( $idxrow, ++$idxcol, $pers->db()->{$doc}->{OPL} );
