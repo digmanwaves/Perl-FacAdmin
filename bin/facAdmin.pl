@@ -344,7 +344,7 @@ if ( $tasks ) {
 
       die( "Error: could not find docent '$doc' in Sheet 'Personeelsoverzicht'. " .
 	   "Please, complete the personnel data.\n" )
-	unless ( exists $pers->db()->{$doc} );
+	unless ( defined $pers and defined $pers->db() and exists $pers->db()->{$doc} );
 
       if ( defined( $limit ) ) {
 	next unless $pers->db()->{$doc}->{OPL} =~ /$limit/;
@@ -436,6 +436,7 @@ if ( $tasks ) {
 
       $wsh->write( $row, ++$col, "Aantal groepen [-]", 'Tu' );
       $wsh->set_column( $col, $col, 4 );
+      my $agrcol = $col;
 
       my $detcol = ++$col;
       $wsh->write( $row,   $col, "HC [h/wk/sem]", 'Tu' );
@@ -519,7 +520,7 @@ if ( $tasks ) {
 		$wsh->write( $row, $col, $detail->{$tag}, 'RI1F1' );
 		my $primaryhoursonly = $detail->{$tag} / 12;
 		$newacthours += $primaryhoursonly * $detail->{AGR};
-		$wsh->write( $row, $col + $detcol - $sumcol + 3, $primaryhoursonly, 'RI1F1' );
+		$wsh->write( $row, $col + $detcol - $sumcol + 3, $newacthours, 'RI1F1' );
 	      }
 	    }
 	    $wsh->write( $row, ++$col, $detail->{AGR}, 'RI1' );
@@ -536,8 +537,10 @@ if ( $tasks ) {
 	    foreach my $tag ( qw( ST MP ) ) {
 	      ++$col;
 	      if ( exists( $detail->{$tag} ) ) {
+		$wsh->write( $row, $agrcol, $detail->{$tag}, 'RI1' );
 		$wsh->write( $row, $col, $detail->{$tag}, 'RI1' );
 		my $primaryhoursonly = $detail->{$tag};
+		
 	      }
 	    }
 	    ++$row;
