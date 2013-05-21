@@ -146,7 +146,7 @@ sub buildDataBase {
 	$self->checkPositiveIntegerFields( [ qw( SP ) ], $line );
 
 	# check if DOCENT is known
-	if ( defined $pers ) {
+	if ( defined $pers and defined $pers->db() ) {
 	  $self->warnOnCurrentLine( "docent '$line->{DOCENT}' of curriculum line not found in personnel data\n" )
 	    unless exists $pers->db()->{$line->{DOCENT}};
 	}
@@ -259,7 +259,7 @@ sub buildDataBase {
 	$self->checkMandatoryFields( [ qw( DOCENT )], $line, " on opdracht line" );
 
 	# check if DOCENT is known
-	if ( defined $pers ) {
+	if ( defined $pers and defined $pers->db() ) {
 	  $self->dieOnCurrentLine( "docent '$line->{DOCENT}' of opdracht line not found in personnel data\n" )
 	    unless exists $pers->db()->{$line->{DOCENT}};
 	}

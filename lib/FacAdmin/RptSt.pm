@@ -71,7 +71,7 @@ sub buildDataBase {
       my $sgnr = $line->{SGNR};
       $self->{data}->{$sgnr} = {};
 
-      print STDERR "LINE $i : " . $sgnr . "\n";
+      # print STDERR "LINE $i : " . $sgnr . "\n";
 
       # read atomic data
       for my $label ( qw( SHORTDESCR-NL SHORTDESCR-EN FULLDESCR-NL FULLDESCR-EN
@@ -92,11 +92,11 @@ sub buildDataBase {
 	if ( defined $line->{SGNR} ) {
 	  # this is the first line of a new OO
 	  --$i;
-	  print STDERR "rewinding LINE $i\n";
+	  #print STDERR "rewinding LINE $i\n";
 	  last;
 	}
 	else {
-	  print STDERR "dealing continuation LINE $i\n";
+	  #print STDERR "dealing continuation LINE $i\n";
 	  # this is a continuation line
 	  if ( exists $line->{PROPS} ) {
 	    if ( exists $self->{data}->{$sgnr}->{PROPS}->{$line->{PROPS}} ) {
