@@ -30,7 +30,7 @@ sub buildDataBase {
 		       '^Opleiding$'       => 'OPL',
 		       '^Opdracht$'        => 'VTE',
 		       '^Onderzoek$'       => 'OZP',
-		       '^Dienstverlening$' => 'DVP',
+		       '^Dienst-verlening$' => 'DVP',
 		      }
 		    );
 
