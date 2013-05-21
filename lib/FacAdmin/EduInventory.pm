@@ -92,8 +92,12 @@ sub buildDataBase {
       $self->checkPositiveRealFields( [ qw( HC PR WC CP WP BP ) ], $line );
 
       # check validity of studiegidsnr
-      dieOnCurrentLine( "invalid '$self->{header}->{SGNR}'-value '$line->{SGNR}'\n" )
+      $self->dieOnCurrentLine( "missing 'Studiegidsnr'" )
+	unless ( exists $line->{SGNR} and defined $line->{SGNR} );
+
+      $self->dieOnCurrentLine( "invalid '$self->{header}->{SGNR}->{LABEL}'-value '$line->{SGNR}'\n" )
 	unless ( $line->{SGNR} =~ /^\d\d\d\dFTI\w\w\w$/ );
+
 
       # check true or false columns
       # this also completes empty true or false cells
@@ -109,13 +113,13 @@ sub buildDataBase {
       $self->checkEnumFields( [ qw( ^SP- ^VT- ^VP- ) ], 
 			      [ '', qw( 1 2 3 4 12 34 ) ], $line );
 
-      dieOnCurrentLine( "invalid line type " .
-			"(must be one of '$self->{header}->{CURRICULUM}', " .
-			"$self->{header}->{ROOSTER}' or '$self->{header}->{OPDRACHT}')\n" )
+      $self->dieOnCurrentLine( "invalid line type " .
+			       "(must be one of '$self->{header}->{CURRICULUM}->{LABEL}', " .
+			       "$self->{header}->{ROOSTER}->{LABEL}' or '$self->{header}->{OPDRACHT}->{LABEL}')\n" )
 	unless ( $line->{CURRICULUM} + $line->{ROOSTER} + $line->{OPDRACHT} > 0 );
 
-      dieOnCurrentLine( "you cannot combine the line type '$self->{header}->{CURRICULUM}'" .
-			" with '$self->{header}->{ROOSTER}'" )
+      $self->dieOnCurrentLine( "you cannot combine the line type '$self->{header}->{CURRICULUM}->{LABEL}'" .
+			" with '$self->{header}->{ROOSTER}->{LABEL}'" )
 	if ( $line->{CURRICULUM} == 1 and $line->{ROOSTER} == 1 );
 
       ###############################################
@@ -186,11 +190,11 @@ sub buildDataBase {
 	foreach my $cu ( qw( HC PR WC CP WP BP ST MP ) ) {
 	  ++$count if( $line->{$cu} );
 	}
-	$self->dieOnLine( "You cannot combine different activity types " .
+	$self->dieOnCurrentLine( "You cannot combine different activity types " .
 			  "(Hoorcollege, Practicum, ..., Masterproef) " .
 			  "on a single non-curriculum line. Please, split them.\n" )
 	  if ( $count > 1 );
-	$self->dieOnLine( "You cannot have no activity (Hoorcollege, Practicum, " .
+	$self->dieOnCurrentLine( "You cannot have no activity (Hoorcollege, Practicum, " .
 			  "..., Masterproef) at all on a non-curriculum line. ".
 			  "Please, complete the line.\n" )
 	  if ( $count < 1 );
@@ -213,10 +217,10 @@ sub buildDataBase {
 	# session duration and total duration must be real and positive
 	$self->checkPositiveRealFields( [ qw( DSS TOTAAL ) ], $line );
 
-	$self->dieOnLine( "'$self->{header}->{TOTAAL}'-value is not correct!\n" )
+	$self->dieOnCurrentLine( "'$self->{header}->{TOTAAL}->{LABEL}'-value is not correct!\n" )
 	  if ( abs( $line->{ASS} * $line->{DSS} - $line->{TOTAAL} ) > 0.01 );
 
-	$self->dieOnLine( "Duplicate line of type 'roosterlijn'\n" )
+	$self->dieOnCurrentLine( "Duplicate line of type 'roosterlijn'\n" )
 	  if ( exists( $self->{data}->{$line->{SGNR}}->{R}
 		       ->{$line->{OO}}->{$line->{ACT}}->{$line->{GRP}} ) );
 
@@ -236,8 +240,8 @@ sub buildDataBase {
 	for my $tag ( qw( HC PR WC CP WP BP ) ) {
 	  my $hours = $line->{$tag} if ( $line->{$tag} =~ /\d+.?\d*/ );
 	  if ( $hours ) {
-	    $self->dieOnLine( "More than one course-unit type on a single roster line " .
-			      "is not allowed\n" )
+	    $self->dieOnCurrentLine( "More than one course-unit type on a single roster line " .
+				     "is not allowed\n" )
 	      if ( $cu );
 	    $cu += $hours;
 	    $hash->{CUTYPE} = $tag;
