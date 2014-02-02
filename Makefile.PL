@@ -2,7 +2,7 @@ require 5.006;
 
 use ExtUtils::MakeMaker;
 
-$version = '1.00';
+$version = '1.02';
 
 my $target = 'MS'; # set this to MS to avoid generating man pages with 
 

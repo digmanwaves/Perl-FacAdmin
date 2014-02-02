@@ -30,7 +30,7 @@ use Encode;
 use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
 
-END { print "\n"; }
+END { ConLogger::lograw( "\n" ); }
 
 sub help;
 
@@ -39,15 +39,8 @@ sub checkHeaderEntry;
 my $toolname = 'facAdmin';
 my $company  = 'Digital Manifold Waves';
 my $author   = 'Walter Daems (walter.daems@ua.ac.be)';
-my $date     = '2013/04/09';
-my $version  = '1.00';
-
-print
-  "/***************************************************\n"
-  . " * $company - $toolname\n"
-  . " * Author : $author\n"
-  . " * Version: $version ($date)\n"
-  . " ***************************************************/\n";
+my $date     = '2014/01/08';
+my $version  = '2.0.11';
 
 my ($program, $installdir) = fileparse( $0 );
 
@@ -59,6 +52,7 @@ my $roster;
 my $help;
 my $man;
 my $limit;
+my $logfile;
 
 GetOptions( "limit=s"         => \$limit,
 	    "tasks"           => \$tasks,
@@ -66,6 +60,7 @@ GetOptions( "limit=s"         => \$limit,
 	    "sisa-check"      => \$ocheck,
 	    "curriculum"      => \$curriculum,
 	    "roster"          => \$roster,
+	    "logfile=s"       => \$logfile,
 	    "help|?"          => \$help,
 	    "man"             => \$man )
   or pod2usage(2);
@@ -81,10 +76,37 @@ pod2usage(1) unless ( defined( $icheck ) or
 my @iFileNames = @ARGV;
 my ( undef, $path, $suffix ) = fileparse($iFileNames[0], qw( .xlsx .xlsm ) );
 
+################
+# Setup logging
+##############
+
+if ( defined $logfile ) {
+  my ( $sec, $min, $hour, $mday, $mon, $year ) = localtime;
+  $year += 1900;
+  $mon += 1;
+  my $date = sprintf( "%04u-%02u-%02u_\@_%02uh%02um%02us", $year, $mon, $mday, $hour, $min, $sec );
+  $logfile =~ s/DATE\./$date./;
+
+  my $logfile = File::Spec->catfile( $path, $logfile );
+  ConLogger::setLogFile( $logfile );
+}
+
+######################
+# Log opening message
+####################
+
+ConLogger::lograw( "/***************************************************\n"
+		   . " * $company - $toolname\n"
+		   . " * Author : $author\n"
+		   . " * Version: $version ($date)\n"
+		   . " ***************************************************/\n"
+		 );
+
+
+
 ####################
 # Parse input files
 ##################
-
 
 ConLogger::logitem( 'Scanning input files' );
 my $sheets = {
@@ -233,7 +255,7 @@ if ( $tasks ) {
 		# to avoid string comparisons in ==
 		# = temporary hack
 		if ( $tag ne "PROG" ) {
-		
+
 		  # check if new tags corresponds to existing ones
 		  die( "Error: Docent '$doc' has an inconsistent workload " .
 		       "for $oo - $act for the different groups (s)he's teaching. " .
@@ -343,7 +365,7 @@ if ( $tasks ) {
       $pb->progress( ++$docentctr, $docentcount );
 
       die( "Error: could not find docent '$doc' in Sheet 'Personeelsoverzicht'. " .
-	   "Please, complete the personnel data.\n" )
+	   "Please, complete the personnel data." )
 	unless ( defined $pers and defined $pers->db() and exists $pers->db()->{$doc} );
 
       if ( defined( $limit ) ) {
@@ -359,7 +381,9 @@ if ( $tasks ) {
       my $leftcol = 0;
       my $rightcol = 22;
 
-      $wsh->insert_image( 0, $rightcol - 6, 'UALogo.png' );
+      my $image = File::Spec->catfile( $installdir, 'UALogo.png' );
+      $image = 'UALogo.png' unless -r $image;
+      $wsh->insert_image( 0, $rightcol - 6, $image );
 
       # Write title on sheet
       my ($col , $row) = ( 0, 0);
@@ -373,14 +397,14 @@ if ( $tasks ) {
 			 "meer dan 100% kan bedragen) is vrije ruimte ('marge') die je naar " .
 			 "eigen inzicht kan invullen in elk van de drie kerntaken (onderwijs, " .
 			 "onderzoek en dienstverlening).", 'LW' );
-      $wsh->set_row( $row, 22 );
+      $wsh->set_row( $row, 50 );
 
       ++$row;
       $wsh->merge_range( $row, $leftcol, $row, $rightcol - 8,
 			 "De faculteit engageert zich om in in overleg en in functie van je " .
 			 "statuut een voldoende groot percentage onderzoekstijd vrij te maken " .
 			 "zolang een aanvaardbare onderzoeksoutput meetbaar is.", 'LW' );
-      $wsh->set_row( $row, 12 );
+      $wsh->set_row( $row, 35 );
 
       ++$row;
       $wsh->merge_range( $row, $leftcol, $row, $rightcol - 8,
@@ -388,14 +412,14 @@ if ( $tasks ) {
 			 "categorieën, maar heeft ook het recht om het geheel van onderwijs- " .
 			 "en dienstverleningstaken aan te vullen tot de resterende marge nul " .
 			 "bedraagt.", 'LW' );
-      $wsh->set_row( $row, 22 );
+      $wsh->set_row( $row, 35 );
 
       ++$row;
       $wsh->merge_range( $row, $leftcol, $row, $rightcol - 8,
 			 "Opmerking: markeer wijzigingen, noteer de datum en je naam " .
 			 "zodat de administratie je wijzigingen kan aanbrengen " .
 			 "in de database.", 'LW' );
-      $wsh->set_row( $row, 12 );
+      $wsh->set_row( $row, 20 );
 
 
       $row += 2;
@@ -548,12 +572,6 @@ if ( $tasks ) {
 	  $col = $leftcol;
 	}
 	$wsh->write( $row, $col++, "Sem-$semester - subtotalen:", 'Rb' );
-	for ( $col = $totcol; $col <= $endtotcol; ++$col ) {
-	  $wsh->write_formula( $row,   $col,
-			       "=SUBTOTAL(9," .
-			       xl_range( $startrow, $row-1, $col, $col ) . ")",
-			       'RI1bF1' );
-	}
 	for ( $col = $detcol; $col < $middetcol; ++$col ) {
 	  $wsh->write_formula( $row,   $col,
 			       "=SUBTOTAL(9," .
@@ -574,7 +592,7 @@ if ( $tasks ) {
 
 	if ( $startrow == $row - 2 ) {
 	  $wsh->write_formula( $row, $col,
-			       'sum(' . 
+			       'sum(' .
 			       xl_range( $startrow, $startrow, $totcol, $endtotcol ) .
 			       ')*' . xl_rowcol_to_cell( $startrow, $endtotcol+1) . '/12',
 			       'RI1bF1' );
@@ -587,8 +605,11 @@ if ( $tasks ) {
 	      xl_range( $startrow, $row-2, $i, $i ) . "," .
 		xl_range( $startrow, $row-2, $endtotcol+1, $endtotcol+1 ) . ")";
 	  }
+	  my $nofweeks = 12;
+	  $nofweeks *= 2 if ( $semester eq '12' );
+
 	  $wsh->write_formula( $row, $col,
-			       '(' . join( '+', @sumcomponents ) . ')/12',
+			       '(' . join( '+', @sumcomponents ) . ")/$nofweeks",
 			       'RI1bF1' );
 	}
 	++$row;
@@ -601,12 +622,6 @@ if ( $tasks ) {
       $wsh->write( $row-1, 0, undef, 'Lu' );
 
       $wsh->write( $row, $sumcol - 2, "Jaar-subtotalen:", 'Rb' );
-      for ( $col = $totcol; $col <= $endtotcol; ++$col ) {
-	$wsh->write_formula( $row,   $col,
-			     "=SUBTOTAL(9," .
-			     xl_range( $firstdatarow, $row-1, $col, $col ) . ")",
-			     'RI1bF1' );
-      }
       for ( $col = $detcol; $col < $middetcol; ++$col ) {
 	$wsh->write_formula( $row,   $col,
 			     "=SUBTOTAL(9," .
@@ -632,7 +647,7 @@ if ( $tasks ) {
 
       if ( $firststartrow == $row - 5 ) {
 	$wsh->write_formula( $row, $col,
-			     'sum(' . 
+			     'sum(' .
 			     xl_range( $firststartrow, $firststartrow, $totcol, $endtotcol ) .
 			     ')*' . xl_rowcol_to_cell( $firststartrow, $endtotcol+1) . '/24',
 			     'RI1bF1' );
@@ -663,6 +678,13 @@ if ( $tasks ) {
       $wsh->merge_range( $row, $col,   $row, $col+1, $pers->db()->{$doc}->{DVP}, 'LgP2' );
       $wsh->merge_range( $row, $col+2, $row, $rightcol, undef, 'LgP2' );
       my ( $dvrow, $dvcol ) = ( $row, $col );
+
+      foreach my $dvkey ( grep { m/^DV-/ } keys %{$pers->db()->{$doc}} ) {
+	my $dvtask = substr( $dvkey, 3 );
+	$col = 0;
+	$wsh->write( ++$row, $col++, $dvtask, 'LI2' );
+	$wsh->write( $row, $col++, $pers->{dvpercentages}->{$dvkey}, 'RP1' );
+      }
 
       my $marginformula =
 	sprintf( "=%s-%s-%s-%s",
@@ -737,7 +759,7 @@ if ( $curriculum ) {
 	}
 
 	$data->{I} = 0;
-	foreach my $d ( qw( WC CP ) ) {
+	foreach my $d ( qw( WC CP WP BP ) ) {
 	  $data->{I} += $details->{$d};
 	}
 
@@ -754,7 +776,7 @@ if ( $curriculum ) {
 	      my %keuzepks = map { m/(\d+)\s*-\s*(.+)/; $1 => $2 }
 		split( /\s*,\s*/, $prog->db()->{$opl}->{KP} );
 
-	      die( "Error: Keuzepakket '$keuzepakket' is unkown for OO $oo\n" )
+	      die( "Error: Keuzepakket '$keuzepakket' is unkown for OO $oo in opleiding $opl\n" )
 		unless ( exists $keuzepks{$keuzepakket} );
 
 	      @chunks = ( $keuzepks{$keuzepakket} );
@@ -762,26 +784,54 @@ if ( $curriculum ) {
 	      my @minors = split( /\s*,\s*/, $prog->db()->{$opl}->{MINORS} );
 
 	      # determine if the $oo is a major or a minor $oo
-	      my $type;
-	      my @minorkeys = grep { m/MINOR-/ } keys %$details;
+	      my @minorkeys = grep { m/^MINOR-/ } keys %$details;
 	      if ( @minors == @minorkeys ) {
 		@minorkeys = ( '' );
 	      }
 	      @chunks = @minorkeys;
+
+	      my @ars = split( /\s*,\s*/, $prog->db()->{$opl}->{AR} );
+
+	      # determine if the $oo is a main or an AR $oo
+	      my @arkeys = grep { m/^AR-/ } keys %$details;
+
+	      if ( @ars < @arkeys ) {
+#		print STDERR join( "|", @ars ) . "\n";
+#		print STDERR join( "|", @arkeys ) . "\n";
+		die( "Error: Invalid afstudeerrichting for OO $oo in opleiding $opl\n" );
+	      }
+
+	      if ( @ars == @arkeys ) {
+		@arkeys = ();
+	      }
+	      else {
+		# in this case this is an AR - OO it cannot not be a MINOR OO
+		# therefore empty the chunks again
+		@chunks = ();
+	      }
+
+	      foreach my $ar ( @arkeys ) {
+		chomp $ar;
+		$ar =~ s/^AR-//;
+		$ar -= 1;
+		# print STDERR "=== " . $ar . " // " . $ars[$ar] . "\n";
+
+		push @chunks, "Afstudeerrichting " . $ars[$ar];
+	      }
 	    }
 
+	    #	    print STDERR "These are the " . @chunks . " chunks: " . join( "|", @chunks ) . "\n";
 	    foreach my $chunk ( @chunks ) {
 	      $currdb
 		->{$opl}
 		  ->{$details->{PROGJAAR}}
-		    ->{$chunk}
-		      ->{$details->{SEM}}
-			->{$details->{CAT}}
-			  ->{$sgnr}
-			    = $data;
+		    ->{$details->{PROG}}
+		      ->{$chunk}
+			->{$details->{SEM}}
+			  ->{$details->{CAT}}
+			    ->{$sgnr}
+			      = $data;
 	    }
-
-
 	  }
 	}
 
@@ -802,11 +852,12 @@ if ( $curriculum ) {
 	    $currdb
 	      ->{$opl}
 		->{$progjaar}
-		  ->{''}
-		    ->{$semester} # for semester we take the marked value!
-		      ->{$details->{CAT}}
-			->{$sgnr}
-			  = $data;
+		  ->{UA}
+		    ->{''}
+		      ->{$semester} # for semester we take the marked value!
+			->{$details->{CAT}}
+			  ->{$sgnr}
+			    = $data;
 	  }
 	}
       }
@@ -820,8 +871,8 @@ if ( $curriculum ) {
 
     my $oFileName = File::Spec->catfile( $path, "Curriculum-IW-$opl.xlsx" );
     my $currbook =
-      XLDB::OFile->new( filename => $oFileName, 
-			title    => 'FacAdmin - Opdrachten',
+      XLDB::OFile->new( filename => $oFileName,
+			title    => 'FacAdmin - Curriculum',
 			author   => 'Walter Daems',
 			manager  => 'Walter Daems',
 			company  => 'Universiteit Antwerpen',
@@ -839,81 +890,88 @@ if ( $curriculum ) {
       # add header
       my $row = 0;
       my $col = 0;
+
       $ysh->write( $row++, $col, "Opleiding: $oplblurb", 'b' );
       $ysh->write( $row++, $col, "Modeltraject: $jaarblurb" );
 
-      $ysh->set_column( $col, $col, 16, 'L' );
-      $ysh->write( $row, $col++, "Studiegidsnummer", 'Lx' );
-
-      $ysh->set_column( $col, $col, 16, 'L' );
-      $ysh->write( $row, $col++, "Module", 'Lx' );
-
-      $ysh->set_column( $col, $col, 48, 'L' );
-      $ysh->write( $row, $col++, "Opleidingsonderdeel", 'Lx' );
-
-      $ysh->set_column( $col, $col, 5, 'RI1' );
-      $ysh->write( $row, $col++, "SP", 'RI1x' );
-      $ysh->set_column( $col, $col, 5, 'RI1' );
-      $ysh->write( $row, $col++, "T", 'RI1x' );
-      $ysh->set_column( $col, $col, 5, 'RI1' );
-      $ysh->write( $row, $col++, "P", 'RI1x' );
-      $ysh->set_column( $col, $col, 5, 'RI1' );
-      $ysh->write( $row, $col++, "I", 'RI1x' );
-
-      $ysh->set_column( $col, $col, 60, 'L' );
-      $ysh->write( $row, $col++, "Titularissen", 'Lx' );
-
-      $ysh->set_column( $col, $col, 5, 'C' );
-      $ysh->write( $row, $col++, "Sem", 'Cx' );
-
-      $ysh->set_column( $col, $col, 5, 'C' );
-      $ysh->write( $row, $col++, "D", 'Cx' );
-
-      $ysh->set_column( $col, $col, 5, 'C' );
-      $ysh->write( $row, $col++, "ExCo", 'Cx' );
-      ++$row;
-
-      foreach my $minor ( sort keys %{$currdb->{$opl}->{$jaar}} ) {
-	if ( length( $minor ) ) {
-	  my $col = 0;
-	  $ysh->write ( $row++, $col, $minor, 'B' );
-	}
-	foreach my $sem ( sort keys %{$currdb->{$opl}->{$jaar}->{$minor}} ) {
-	  # write block
-	  foreach my $cat ( sort keys %{$currdb->{$opl}->{$jaar}->{$minor}->{$sem}} ) {
-	    foreach my $sgnr ( sort keys %{$currdb->{$opl}->{$jaar}->{$minor}->{$sem}->{$cat}} ) {
-	      my $data = $currdb->{$opl}->{$jaar}->{$minor}->{$sem}->{$cat}->{$sgnr};
-	      # write line
-	      $col = 0;
-	      $ysh->write( $row, $col++, $sgnr );
-	      $ysh->write( $row, $col++, $cat );
-	      $ysh->write( $row, $col++, $data->{OO} );
-	      $ysh->write( $row, $col++, $data->{SP} );
-	      $ysh->write( $row, $col, $data->{HC} ) if( $data->{HC} );
-	      $ysh->write( $row, $col+1, $data->{PR} ) if( $data->{PR} );
-	      $ysh->write( $row, $col+2, $data->{I} ) if( $data->{I} );
-	      $col += 3;
-	      $ysh->write( $row, $col++, $data->{TIT}, 'LW' );
-	      $ysh->write( $row, $col++, $sem );
-	      $ysh->write( $row, $col++, $data->{DEELTIJDS} );
-	      ++$row
-	    }
-	  }
-	  # skip line
-	}
+      foreach my $prog ( sort keys %{$currdb->{$opl}->{$jaar}} ) {
+	$col = 0;
 	++$row;
+	$ysh->write( $row++, $col, $prog );
+
+	$ysh->set_column( $col, $col, 16, 'L' );
+	$ysh->write( $row, $col++, "Studiegidsnummer", 'Lx' );
+
+	$ysh->set_column( $col, $col, 16, 'L' );
+	$ysh->write( $row, $col++, "Module", 'Lx' );
+
+	$ysh->set_column( $col, $col, 48, 'L' );
+	$ysh->write( $row, $col++, "Opleidingsonderdeel", 'Lx' );
+
+	$ysh->set_column( $col, $col, 5, 'RI1' );
+	$ysh->write( $row, $col++, "SP", 'RI1x' );
+	$ysh->set_column( $col, $col, 5, 'RI1' );
+	$ysh->write( $row, $col++, "T", 'RI1x' );
+	$ysh->set_column( $col, $col, 5, 'RI1' );
+	$ysh->write( $row, $col++, "P", 'RI1x' );
+	$ysh->set_column( $col, $col, 5, 'RI1' );
+	$ysh->write( $row, $col++, "I", 'RI1x' );
+
+	$ysh->set_column( $col, $col, 60, 'L' );
+	$ysh->write( $row, $col++, "Titularissen", 'Lx' );
+
+	$ysh->set_column( $col, $col, 5, 'C' );
+	$ysh->write( $row, $col++, "Sem", 'Cx' );
+
+	$ysh->set_column( $col, $col, 5, 'C' );
+	$ysh->write( $row, $col++, "D", 'Cx' );
+
+	$ysh->set_column( $col, $col, 5, 'C' );
+	$ysh->write( $row, $col++, "ExCo", 'Cx' );
+	++$row;
+
+	foreach my $chunk ( sort keys %{$currdb->{$opl}->{$jaar}->{$prog}} ) {
+	  if ( length( $chunk ) ) {
+	    my $col = 0;
+	    $ysh->write ( $row++, $col, $chunk, 'b' );
+	  }
+	  foreach my $sem ( sort keys %{$currdb->{$opl}->{$jaar}->{$prog}->{$chunk}} ) {
+	    # write block
+	    foreach my $cat ( sort keys %{$currdb->{$opl}->{$jaar}->{$prog}->{$chunk}->{$sem}} ) {
+	      foreach my $sgnr ( sort keys %{$currdb->{$opl}->{$jaar}->{$prog}->{$chunk}->{$sem}->{$cat}} ) {
+		my $data = $currdb->{$opl}->{$jaar}->{$prog}->{$chunk}->{$sem}->{$cat}->{$sgnr};
+		# write line
+		$col = 0;
+		$ysh->write( $row, $col++, $sgnr );
+		$ysh->write( $row, $col++, $cat );
+		$ysh->write( $row, $col++, $data->{OO} );
+		$ysh->write( $row, $col++, $data->{SP} );
+		$ysh->write( $row, $col, $data->{HC} ) if( $data->{HC} );
+		$ysh->write( $row, $col+1, $data->{PR} ) if( $data->{PR} );
+		$ysh->write( $row, $col+2, $data->{I} ) if( $data->{I} );
+		$col += 3;
+		$ysh->write( $row, $col++, $data->{TIT}, 'LW' );
+		$ysh->write( $row, $col++, $sem );
+		$ysh->write( $row, $col++, $data->{DEELTIJDS} );
+		++$row
+	      }
+	    }
+	    # skip line
+	  }
+	  ++$row;
+	}
+	--$row;
+	for ( $col = 0; $col <= 10; ++$col ) {
+	  $ysh->write($row, $col, undef, 'Cx' );
+	}
+	$ysh->set_row( $row, 4 );
+	$row += 2;
       }
-      --$row;
-      for ( $col = 0; $col <= 10; ++$col ) {
-	$ysh->write($row, $col, undef, 'Cx' );
-      }
-      $ysh->set_row( $row, 4 );
-      $row += 2;
 
       $col = 0;
 
       my $comment = $prog->db()->{$opl}->{COMMENT};
-      $ysh->write( $row, $col++, "Opmerking:", 'B' );
+      $ysh->write( $row, $col++, "Opmerking:", 'b' );
       $ysh->write( $row++, $col, $comment );
       $row++;
 
@@ -1019,7 +1077,7 @@ EOF
   ConLogger::logitem( 'Writing mailmerge excelbase' );
 
   my $mmFileName = File::Spec->catfile( $path, "Roster-mailmerge.xlsx" );
-  my $mmbook = 
+  my $mmbook =
     XLDB::OFile->new( filename => $mmFileName,
 		      title    => 'FacAdmin - Roster - Mailmerge',
 		      author   => 'Walter Daems',
@@ -1033,38 +1091,38 @@ EOF
 
   my $mmrow = 0;
   my $mmcol = 0;
-  $mmsh->write( $mmrow, $mmcol, "Mailmerge data", 'B' );
+  $mmsh->write( $mmrow, $mmcol, "Mailmerge data", 'b' );
 
   ++$mmrow;
   $mmsh->write( ++$mmrow, $mmcol, "Global values" , 'Lx' );
   $mmsh->write( $mmrow, $mmcol+1, "(ADD / DEFAULT / IGNORE / OVERRULE)" , 'Lx' );
   $mmsh->write( $mmrow, $mmcol+2, undef , 'Lx' );
 
-  $mmsh->write( ++$mmrow, $mmcol, "FROM", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "FROM", 'b' );
   $mmsh->write( $mmrow, $mmcol+1, "OVERRULE" );
   $mmsh->write( $mmrow, $mmcol+2, "walter.daems\@ua.ac.be" );
 
-  $mmsh->write( ++$mmrow, $mmcol, "TO", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "TO", 'b' );
   $mmsh->write( $mmrow, $mmcol+1, "OVERRULE" );
   $mmsh->write( $mmrow, $mmcol+2, "walter.daems\@ua.ac.be" );
 
-  $mmsh->write( ++$mmrow, $mmcol, "CC", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "CC", 'b' );
   $mmsh->write( $mmrow, $mmcol+1, "IGNORE" );
   $mmsh->write( $mmrow, $mmcol+2, undef );
 
-  $mmsh->write( ++$mmrow, $mmcol, "BCC", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "BCC", 'b' );
   $mmsh->write( $mmrow, $mmcol+1, "IGNORE" );
   $mmsh->write( $mmrow, $mmcol+2, undef );
 
-  $mmsh->write( ++$mmrow, $mmcol, "SUBJECT", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "SUBJECT", 'b' );
   $mmsh->write( $mmrow, $mmcol+1, "OVERRULE" );
   $mmsh->write( $mmrow, $mmcol+2, "DRINGEND: Controle roosterinformatie" );
 
-  $mmsh->write( ++$mmrow, $mmcol, "BODY", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "BODY", 'b' );
   $mmsh->write( $mmrow, $mmcol+1, "OVERRULE" );
   $mmsh->write( $mmrow, $mmcol+2, $mailbodyfilename, 'L' );
 
-  $mmsh->write( ++$mmrow, $mmcol, "ATTACHMENTS", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "ATTACHMENTS", 'b' );
   $mmsh->write( $mmrow, $mmcol+1, "IGNORE" );
 
   $mmsh->write( $mmrow, $mmcol+2, undef );
@@ -1074,16 +1132,16 @@ EOF
   $mmsh->write( $mmrow, $mmcol+1, undef , 'Lx' );
   $mmsh->write( $mmrow, $mmcol+2, undef , 'Lx' );
 
-  $mmsh->write( ++$mmrow, $mmcol, "TO", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "CC", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "BCC", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "SUBJECT", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "BODY", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "ATTACHMENTS", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "Lastname", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "Firstname", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "Fullname", 'B' );
-  $mmsh->write(   $mmrow, ++$mmcol, "Callname", 'B' );
+  $mmsh->write( ++$mmrow, $mmcol, "TO", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "CC", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "BCC", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "SUBJECT", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "BODY", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "ATTACHMENTS", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "Lastname", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "Firstname", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "Fullname", 'b' );
+  $mmsh->write(   $mmrow, ++$mmcol, "Callname", 'b' );
   $mmsh->set_column( 0, $mmcol, 25, 'L' );
 
   #################################
@@ -1128,7 +1186,7 @@ EOF
       my $row = 0;
       my $col = 0;
       $sh->write( $row++, $col, "Roosteroverzicht ter controle voor " . $headmaster . " (hoofdtitularis)",
-		  'B' );
+		  'b' );
 
       $sh->write( ++$row, $col, "Stugiegidsnr", 'Lx' );
       $sh->set_column( $col, $col, 12, 'L' );

@@ -95,7 +95,7 @@ sub buildDataBase {
       $self->dieOnCurrentLine( "missing 'Studiegidsnr'" )
 	unless ( exists $line->{SGNR} and defined $line->{SGNR} );
 
-      $self->dieOnCurrentLine( "invalid '$self->{header}->{SGNR}->{LABEL}'-value '$line->{SGNR}'\n" )
+      $self->dieOnCurrentLine( "invalid '$self->{header}->{SGNR}->{LABEL}'-value '$line->{SGNR}'" )
 	unless ( $line->{SGNR} =~ /^\d\d\d\dFTI\w\w\w$/ );
 
 
@@ -115,7 +115,7 @@ sub buildDataBase {
 
       $self->dieOnCurrentLine( "invalid line type " .
 			       "(must be one of '$self->{header}->{CURRICULUM}->{LABEL}', " .
-			       "$self->{header}->{ROOSTER}->{LABEL}' or '$self->{header}->{OPDRACHT}->{LABEL}')\n" )
+			       "$self->{header}->{ROOSTER}->{LABEL}' or '$self->{header}->{OPDRACHT}->{LABEL}')" )
 	unless ( $line->{CURRICULUM} + $line->{ROOSTER} + $line->{OPDRACHT} > 0 );
 
       $self->dieOnCurrentLine( "you cannot combine the line type '$self->{header}->{CURRICULUM}->{LABEL}'" .
@@ -147,7 +147,7 @@ sub buildDataBase {
 
 	# check if DOCENT is known
 	if ( defined $pers and defined $pers->db() ) {
-	  $self->warnOnCurrentLine( "docent '$line->{DOCENT}' of curriculum line not found in personnel data\n" )
+	  $self->warnOnCurrentLine( "docent '$line->{DOCENT}' of curriculum line not found in personnel data" )
 	    unless exists $pers->db()->{$line->{DOCENT}};
 	}
 
@@ -192,11 +192,11 @@ sub buildDataBase {
 	}
 	$self->dieOnCurrentLine( "You cannot combine different activity types " .
 			  "(Hoorcollege, Practicum, ..., Masterproef) " .
-			  "on a single non-curriculum line. Please, split them.\n" )
+			  "on a single non-curriculum line. Please, split them." )
 	  if ( $count > 1 );
 	$self->dieOnCurrentLine( "You cannot have no activity (Hoorcollege, Practicum, " .
 			  "..., Masterproef) at all on a non-curriculum line. ".
-			  "Please, complete the line.\n" )
+			  "Please, complete the line." )
 	  if ( $count < 1 );
       }
 
@@ -206,7 +206,7 @@ sub buildDataBase {
 
 	# check if the campus is conformant and present
 	$self->checkEnumFields( [ qw( ^CAMPUS$ ) ],
-				[ qw( CPM CHO CGB CDD CST SCVO XXX CHO/CPM CHO/CST CPM/CST ) ],
+				[ qw( CPM CHO CGB CDE CST SCVO XXX CHO/CPM CHO/CST CPM/CST ) ],
 				$line );
 
 
@@ -217,10 +217,10 @@ sub buildDataBase {
 	# session duration and total duration must be real and positive
 	$self->checkPositiveRealFields( [ qw( DSS TOTAAL ) ], $line );
 
-	$self->dieOnCurrentLine( "'$self->{header}->{TOTAAL}->{LABEL}'-value is not correct!\n" )
+	$self->dieOnCurrentLine( "'$self->{header}->{TOTAAL}->{LABEL}'-value is not correct!" )
 	  if ( abs( $line->{ASS} * $line->{DSS} - $line->{TOTAAL} ) > 0.01 );
 
-	$self->dieOnCurrentLine( "Duplicate line of type 'roosterlijn'\n" )
+	$self->dieOnCurrentLine( "Duplicate line of type 'roosterlijn'" )
 	  if ( exists( $self->{data}->{$line->{SGNR}}->{R}
 		       ->{$line->{OO}}->{$line->{ACT}}->{$line->{GRP}} ) );
 
@@ -241,7 +241,7 @@ sub buildDataBase {
 	  my $hours = $line->{$tag} if ( $line->{$tag} =~ /\d+.?\d*/ );
 	  if ( $hours ) {
 	    $self->dieOnCurrentLine( "More than one course-unit type on a single roster line " .
-				     "is not allowed\n" )
+				     "is not allowed" )
 	      if ( $cu );
 	    $cu += $hours;
 	    $hash->{CUTYPE} = $tag;
@@ -260,13 +260,13 @@ sub buildDataBase {
 
 	# check if DOCENT is known
 	if ( defined $pers and defined $pers->db() ) {
-	  $self->dieOnCurrentLine( "docent '$line->{DOCENT}' of opdracht line not found in personnel data\n" )
+	  $self->dieOnCurrentLine( "docent '$line->{DOCENT}' of opdracht line not found in personnel data" )
 	    unless exists $pers->db()->{$line->{DOCENT}};
 	}
 
 	# check if the campus is conformant (but optional)
 	$self->checkEnumFields( [ qw( ^CAMPUS$ ) ],
-				[ qw( CPM CHO CGB CDD CST SCVO XXX ) ], 
+				[ qw( CPM CHO CGB CDE CST SCVO XXX CHO/CPM CHO/CST CPM/CST ) ], 
 				$line, 'optional' );
 
 	# check positive integer fields

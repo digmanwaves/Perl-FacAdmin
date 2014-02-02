@@ -12,6 +12,7 @@ BEGIN { $| = 1; print "1..3\n"; }
 END { print "not ok $cntr\n" unless $cntr == 0 }
 use XLDB::IFile;
 use FacAdmin::Personnel;
+use Data::Dumper;
 print "ok $cntr\n";
 
 ######################### End of black magic.
@@ -43,5 +44,6 @@ foreach my $property ( qw ( LASTNAME FIRSTNAME OPL VTE OZP DVP ) ) {
 }
 print "ok $cntr\n";
 
+print STDERR Data::Dumper->Dump( [ $persdb ] , [ "perdb" ] );
 
 $cntr = 0;

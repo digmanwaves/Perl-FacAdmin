@@ -23,19 +23,27 @@ sub buildDataBase {
   ConLogger::logitem( "Reading header" );
   $self->_readHeader( 'Achternaam',
 		      {
-		       '^Achternaam$'      => 'LASTNAME',
-		       '^Voornaam$'        => 'FIRSTNAME',
-		       '^Naam$'            => 'NAME',
-		       '^Email$'           => 'EMAIL',
-		       '^Opleiding$'       => 'OPL',
-		       '^Opdracht$'        => 'VTE',
-		       '^Onderzoek$'       => 'OZP',
+		       '^Achternaam$'       => 'LASTNAME',
+		       '^Voornaam$'         => 'FIRSTNAME',
+		       '^Naam$'             => 'NAME',
+		       '^Email$'            => 'EMAIL',
+		       '^Opleiding$'        => 'OPL',
+		       '^Opdracht$'         => 'VTE',
+		       '^Onderzoek$'        => 'OZP',
 		       '^Dienst-verlening$' => 'DVP',
+		       '^DV-(.*)\s*$'       => 'DV-',
 		      }
 		    );
 
-  ConLogger::logitem( "Reading data records" );
+  ConLogger::logitem( "Reading DV percentages" );
+  my $dvpercrow = $self->{raw}->{HeaderRow} - 2;
+  foreach my $key ( grep { m/^DV-/ } keys %{$self->{header}} ) {
+    my $col = $self->{header}->{$key}->{COLNR};
+    $self->{dvpercentages}->{$key} = 
+      $self->{raw}->{Cells}[$dvpercrow][$col]->{Val};
+  }
 
+  ConLogger::logitem( "Reading data records" );
   {
     my $pb = ConLogger::ProgressBar->new();
 
@@ -62,6 +70,9 @@ sub buildDataBase {
       $self->checkPercentageFields( [ qw( VTE OZP DVP ) ],
 				    $line );
 
+      $self->checkBooleanFields( [ qw( ^DV- ) ],
+				 $line );
+
       $self->{data}->{$line->{NAME}} = {
 					LASTNAME  => $line->{LASTNAME},
 					FIRSTNAME => $line->{FIRSTNAME},
@@ -71,6 +82,9 @@ sub buildDataBase {
 					OZP       => $line->{OZP},
 					DVP       => $line->{DVP},
 				       };
+      foreach my $key ( grep { m/^DV-/ } keys %$line ) {
+	$self->{data}->{$line->{NAME}}->{$key} = $line->{$key};
+      }
     }
   }
   $self->_removeRaw();
